@@ -56,6 +56,7 @@ object CommandComplete {
     case "SAVEPOINT"        => apply(Completion.Savepoint)
     case "CREATE TABLE"     => apply(Completion.CreateTable)
     case "DROP TABLE"       => apply(Completion.DropTable)
+    case "SELECT"           => apply(Completion.Select(0))
     case Patterns.Select(s) => apply(Completion.Select(s.toInt))
     case Patterns.Delete(s) => apply(Completion.Delete(s.toInt))
     case Patterns.Update(s) => apply(Completion.Delete(s.toInt))

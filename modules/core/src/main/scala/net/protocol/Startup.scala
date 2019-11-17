@@ -6,27 +6,25 @@ package skunk.net.protocol
 
 import cats.MonadError
 import cats.implicits._
+import natchez.Trace
+import natchez.TraceValue.StringValue
+import skunk.exception.StartupException
 import skunk.net.MessageSocket
 import skunk.net.message._
-import skunk.exception.StartupException
-import natchez.Trace
 
 trait Startup[F[_]] {
-  def apply(user: String, database: String): F[Unit]
+  def apply(user: String, database: String, extraOptions: Map[String, String]): F[Unit]
 }
 
 object Startup {
 
   def apply[F[_]: MonadError[?[_], Throwable]: Exchange: MessageSocket: Trace]: Startup[F] =
     new Startup[F] {
-      override def apply(user: String, database: String): F[Unit] =
+      override def apply(user: String, database: String, extraOptions: Map[String, String]): F[Unit] =
         exchange("startup") {
-          val sm = StartupMessage(user, database)
+          val sm = StartupMessage(user, database, extraOptions)
           for {
-            _ <- Trace[F].put(
-                   "user"     -> user,
-                   "database" -> database
-                 )
+            _ <- Trace[F].put(sm.properties.toIndexedSeq.map { case (k, v) => k -> StringValue(v) } :_*)
             _ <- send(sm)
             _ <- expect { case AuthenticationOk => }
             _ <- flatExpect {

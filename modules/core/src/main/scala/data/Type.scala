@@ -106,6 +106,7 @@ object Type {
   val oidvector        = Type("oidvector")
   val opaque           = Type("opaque")
   val path             = Type("path")
+  val pg_lsn           = Type("pg_lsn")
   val point            = Type("point")
   val polygon          = Type("polygon")
   val record           = Type("record")

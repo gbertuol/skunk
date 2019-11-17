@@ -224,6 +224,7 @@ object Session {
     port:         Int                      = 5432,
     user:         String,
     database:     String,
+    extraOptions: Map[String, String]      = Map(),
     debug:        Boolean = false,
     readTimeout:  FiniteDuration           = Int.MaxValue.seconds,
     writeTimeout: FiniteDuration           = 5.seconds,
@@ -236,7 +237,7 @@ object Session {
       sg  <- SocketGroup[F](b)
       nam <- Resource.liftF(Namer[F])
       ps  <- Protocol[F](host, port, debug, nam, readTimeout, writeTimeout, sg)
-      _   <- Resource.liftF(ps.startup(user, database))
+      _   <- Resource.liftF(ps.startup(user, database, extraOptions))
       // TODO: password negotiation, SASL, etc.
       s   <- Resource.liftF(fromProtocol(ps, nam, strategy))
     } yield s

@@ -8,11 +8,11 @@ import scodec._
 import scodec.codecs._
 
 // TODO: SUPPORT OTHER PARAMETERS
-case class StartupMessage(user: String, database: String) {
+case class StartupMessage(user: String, database: String, extraOptions: Map[String, String]) {
 
   // HACK: we will take a plist eventually
   val properties: Map[String, String] =
-    Map("user" -> user, "database" -> database)
+    Map("user" -> user, "database" -> database) ++ extraOptions
 
 }
 
@@ -21,27 +21,30 @@ object StartupMessage {
   implicit val StartupMessageFrontendMessage: FrontendMessage[StartupMessage] =
     FrontendMessage.untagged {
 
-      def pair(key: String): Codec[String] =
-        cstring.applied(key) ~> cstring
-
       val version: Codec[Unit] =
         int32.applied(196608)
 
-      // After user and database we have a null-terminated list of fixed key-value pairs, which
-      // specify connection properties that affect serialization and are REQUIRED by Skunk.
-      val tail: Codec[Unit] =
-        List(
-          //#config
-          "client_min_messages" -> "WARNING",
-          "DateStyle"           -> "ISO, MDY",
-          "IntervalStyle"       -> "iso_8601",
-          "client_encoding"     -> "UTF8",
-          //#config
-        ).foldRight(byte.applied(0)) { case ((k, v), e) => pair(k).applied(v) <~ e}
+      // null-terminated list of fixed key-value pairs.
+      val parameters: Codec[List[(String, String)]] = list(cstring pairedWith cstring) <~ byte.applied(0)
 
-      (version ~> pair("user") ~ pair("database") <~ tail)
+      def assembleParameters(m: StartupMessage): List[(String, String)] =
+       (
+         m.properties ++
+         Map(
+           // these specify connection properties that affect serialization and are REQUIRED by Skunk.
+           // by appending it to extra we ensure these are kept in case extra had one of them
+           //#config
+           "client_min_messages" -> "WARNING",
+           "DateStyle"           -> "ISO, MDY",
+           "IntervalStyle"       -> "iso_8601",
+           "client_encoding"     -> "UTF8",
+           //#config
+         )
+        ).toList
+
+      (version ~> parameters)
         .asEncoder
-        .contramap(m => m.user ~ m.database)
+        .contramap(m => assembleParameters(m))
 
     }
 

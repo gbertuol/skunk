@@ -91,6 +91,12 @@ trait Protocol[F[_]] {
   def startup(user: String, database: String): F[Unit]
 
   /**
+   * Initiate the session. Requires user and database, optional parameters are also sent
+   * to backend upon startup if present.
+   */
+  def startup(user: String, database: String, extraOptions: Map[String, String]): F[Unit]
+
+  /**
    * Signal representing the current transaction status as reported by `ReadyForQuery`. It's not
    * clear that this is a useful thing to expose.
    */
@@ -227,7 +233,10 @@ object Protocol {
           protocol.Query[F].apply(query, ty)
 
         override def startup(user: String, database: String): F[Unit] =
-          protocol.Startup[F].apply(user, database)
+          protocol.Startup[F].apply(user, database, extraOptions = Map())
+
+        override def startup(user: String, database: String, extraOptions: Map[String, String]): F[Unit] =
+          protocol.Startup[F].apply(user, database, extraOptions)
 
         override def transactionStatus: Signal[F, TransactionStatus] =
           bms.transactionStatus
