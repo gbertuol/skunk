@@ -77,6 +77,16 @@ lazy val core = project
     )
   )
 
+lazy val replication = project
+  .in(file("modules/replication"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name := "skunk-replication",
+    description := "Implements Postgres logical replication."
+  )
+
 lazy val refined = project
   .in(file("modules/refined"))
   .dependsOn(core)
@@ -113,7 +123,7 @@ lazy val tests = project
 
 lazy val example = project
   .in(file("modules/example"))
-  .dependsOn(core)
+  .dependsOn(core, replication)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(

@@ -6,7 +6,6 @@ package skunk.net
 
 import cats.effect.{ Concurrent, ContextShift, Resource }
 import cats.effect.concurrent.Semaphore
-import cats.effect.implicits._
 import fs2.concurrent.Signal
 import fs2.Stream
 import skunk.{ Command, Query, Statement, ~, Void }
@@ -208,11 +207,7 @@ object Protocol {
         // We'll see how well it works out.
         implicit val ms: MessageSocket[F] = bms
         implicit val na: Namer[F] = nam
-        implicit val ExchangeF: protocol.Exchange[F] =
-          new protocol.Exchange[F] {
-            override def apply[A](fa: F[A]): F[A] =
-              sem.withPermit(fa).uncancelable
-          }
+        implicit val ExchangeF: protocol.Exchange[F] = protocol.Exchange(sem)
 
         override def notifications(maxQueued: Int): Stream[F, Notification] =
           bms.notifications(maxQueued)
